@@ -92,7 +92,7 @@ export default function LoginScreen() {
                 onChangeText={handlePhoneChange}
                 keyboardType="phone-pad"
                 autoCapitalize="none"
-                maxLength={15}
+                maxLength={20}
                 onFocus={() => setIsFocusedPhone(true)}
                 onBlur={() => setIsFocusedPhone(false)}
               />

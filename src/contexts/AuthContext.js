@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
         const storedUser = await SecureStore.getItemAsync('user_data');
 
         if (storedToken && storedUser) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
           setUser(JSON.parse(storedUser));
         }
       } catch (error) {
@@ -28,20 +29,16 @@ export function AuthProvider({ children }) {
 
   // src/contexts/AuthContext.js
   async function login(phone, password) {
-    console.log('📱 Tentando login com:', { phone, password });
-
     const response = await api.post('/login', { phone, password });
-    console.log('📦 Resposta da API:', response.data);
 
     // Verifique se a estrutura bate com o que a API realmente retorna
     const { token, user: userData } = response.data;
 
-    console.log('🔑 Token extraído:', token);
-    console.log('👤 Usuário extraído:', userData);
-
     if (!token) {
       throw new Error('Token não foi encontrado na resposta da API.');
     }
+
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
     await SecureStore.setItemAsync('user_token', token);
     await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
@@ -51,6 +48,7 @@ export function AuthProvider({ children }) {
 
 
   async function logout() {
+    delete api.defaults.headers.common['Authorization'];
     await SecureStore.deleteItemAsync('user_token');
     await SecureStore.deleteItemAsync('user_data');
     setUser(null);

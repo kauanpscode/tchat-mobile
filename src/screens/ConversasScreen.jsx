@@ -18,7 +18,7 @@ import { AuthContext } from '../contexts/AuthContext';
 import { colors } from '../styles/theme';
 import { formatPhoneNumber } from '../utils/formatters';
 
-const MOCK_CONVERSAS = [
+const conversas = [
   {
     id: '4',
     name: 'Equipe de Devs 🚀',
@@ -142,7 +142,7 @@ export default function ConversasScreen({ navigation }) {
 
       {/* Lista de Conversas */}
       <FlatList
-        data={MOCK_CONVERSAS}
+        data={conversas}
         keyExtractor={(item) => item.id}
         renderItem={renderConversaItem}
         contentContainerStyle={styles.listContent}
@@ -229,7 +229,6 @@ export default function ConversasScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* Dados do Colaborador retornados da API */}
             <View style={styles.infoSection}>
               <View style={styles.infoRow}>
                 <Ionicons name="person-outline" size={20} color={colors.primary} />
