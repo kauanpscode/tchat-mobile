@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,38 @@ import {
   Image,
   Alert,
   TouchableWithoutFeedback,
+  ListRenderItem,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../styles/theme';
 import { formatPhoneNumber } from '../utils/formatters';
 
-const conversas = [
+// 1. Definição da lista de rotas e parâmetros da navegação
+export type RootStackParamList = {
+  Conversas: undefined;
+  Chat: {
+    nome: string;
+    conversaId?: string;
+  };
+};
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Conversas'>;
+
+// 2. Interface para os itens de conversa
+export interface Conversa {
+  id: string;
+  name: string;
+  lastMessage: string;
+  time: string;
+  unreadCount: number;
+  isGroup: boolean;
+}
+
+const conversas: Conversa[] = [
   {
     id: '4',
     name: 'Equipe de Devs 🚀',
@@ -29,20 +52,21 @@ const conversas = [
   },
 ];
 
-export default function ConversasScreen({ navigation }) {
-  const { user, logout } = useContext(AuthContext);
-  
-  // Estados para controlar o Menu e o Perfil
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [profileModalVisible, setProfileModalVisible] = useState(false);
-  const [avatarUri, setAvatarUri] = useState(user?.avatar_url || null);
+export default function ConversasScreen({ navigation }: Props) {
+  // Consumindo via Hook customizado com os tipos prontos
+  const { user, logout } = useAuth();
 
-  const primaryColor = colors.primary || '#00A3FF';
+  // Estados tipados
+  const [menuVisible, setMenuVisible] = useState<boolean>(false);
+  const [profileModalVisible, setProfileModalVisible] = useState<boolean>(false);
+  const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatar || null);
 
-  // Função para abrir a galeria e selecionar uma foto
-  async function handlePickImage() {
+  const primaryColor: string = colors.primary || '#00A3FF';
+
+  // Função para abrir galeria
+  async function handlePickImage(): Promise<void> {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permissão necessária', 'Precisamos de acesso às suas fotos para trocar o avatar.');
       return;
@@ -59,13 +83,14 @@ export default function ConversasScreen({ navigation }) {
       const selectedImageUri = result.assets[0].uri;
       setAvatarUri(selectedImageUri);
 
-      // TODO: Aqui você pode disparar a função de upload (FormData) para sua API PHP:
+      // TODO: Disparar upload multipart/form-data para a API PHP
       // uploadAvatarToApi(selectedImageUri);
       Alert.alert('Sucesso', 'Foto atualizada com sucesso!');
     }
   }
 
-  function renderConversaItem({ item }) {
+  // Renderizador tipado para a FlatList
+  const renderConversaItem: ListRenderItem<Conversa> = ({ item }) => {
     return (
       <TouchableOpacity
         style={styles.chatItem}
@@ -109,23 +134,22 @@ export default function ConversasScreen({ navigation }) {
         </View>
       </TouchableOpacity>
     );
-  }
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={primaryColor} />
 
-      {/* Header com os 3 pontinhos */}
+      {/* Header com 3 pontinhos */}
       <View style={[styles.header, { backgroundColor: primaryColor }]}>
         <Text style={styles.headerTitle}>Tchat</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerIconBtn}>
             <Ionicons name="search" size={22} color="#FFFFFF" />
           </TouchableOpacity>
-          
-          {/* Botão dos 3 pontinhos */}
-          <TouchableOpacity 
-            style={styles.headerIconBtn} 
+
+          <TouchableOpacity
+            style={styles.headerIconBtn}
             onPress={() => setMenuVisible(true)}
           >
             <Ionicons name="ellipsis-vertical" size={22} color="#FFFFFF" />
@@ -133,7 +157,7 @@ export default function ConversasScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Sub-header com saudação rápida */}
+      {/* Sub-header com saudação */}
       <View style={styles.greetingBar}>
         <Text style={styles.greetingText}>
           Conectado como <Text style={styles.greetingName}>{user?.name || 'Kauan Pontes'}</Text>
@@ -143,7 +167,7 @@ export default function ConversasScreen({ navigation }) {
       {/* Lista de Conversas */}
       <FlatList
         data={conversas}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Conversa) => item.id}
         renderItem={renderConversaItem}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -158,7 +182,7 @@ export default function ConversasScreen({ navigation }) {
         <Ionicons name="chatbubble-ellipses" size={24} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* 1. Modal Dropdown dos 3 Pontinhos */}
+      {/* 1. Modal Dropdown */}
       <Modal
         visible={menuVisible}
         transparent={true}
@@ -196,7 +220,7 @@ export default function ConversasScreen({ navigation }) {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* 2. Modal Completo de Exibição/Edição de Perfil */}
+      {/* 2. Modal do Perfil */}
       <Modal
         visible={profileModalVisible}
         transparent={true}
@@ -212,7 +236,7 @@ export default function ConversasScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* Foto de Perfil com Botão de Alterar */}
+            {/* Foto de Perfil */}
             <View style={styles.avatarSection}>
               <View style={styles.profileAvatar}>
                 {avatarUri ? (
@@ -221,8 +245,8 @@ export default function ConversasScreen({ navigation }) {
                   <Ionicons name="person" size={54} color={colors.primary} />
                 )}
               </View>
-              <TouchableOpacity 
-                style={[styles.cameraBadge, { backgroundColor: primaryColor }]} 
+              <TouchableOpacity
+                style={[styles.cameraBadge, { backgroundColor: primaryColor }]}
                 onPress={handlePickImage}
               >
                 <Ionicons name="camera" size={18} color="#FFFFFF" />
@@ -405,7 +429,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  // Menu 3 Pontinhos
   dropdownOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.1)',
@@ -440,7 +463,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontWeight: '500',
   },
-  // Modal de Perfil
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',

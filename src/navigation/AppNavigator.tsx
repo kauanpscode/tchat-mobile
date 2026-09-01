@@ -1,18 +1,27 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import ConversasScreen from '../screens/ConversasScreen';
 import ChatScreen from '../screens/ChatScreen';
 import { colors } from '../styles/theme';
 
-const Stack = createNativeStackNavigator();
+export type RootStackParamList = {
+  Login: undefined;
+  Conversas: undefined;
+  Chat: {
+    nome: string;
+    conversaId?: string;
+  };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { authenticated, loading } = useContext(AuthContext);
+  const { authenticated, loading } = useAuth();
 
   if (loading) {
     return (
@@ -33,15 +42,25 @@ export default function AppNavigator() {
       >
         {authenticated ? (
           <>
-            <Stack.Screen name="Conversas" component={ConversasScreen} options={{ headerShown: false }} />
-            <Stack.Screen 
-              name="Chat" 
-              component={ChatScreen} 
-              options={({ route }) => ({ title: route.params?.nome || 'Chat' })} 
+            <Stack.Screen
+              name="Conversas"
+              component={ConversasScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Chat"
+              component={ChatScreen}
+              options={({ route }) => ({
+                title: route.params.nome || 'Chat',
+              })}
             />
           </>
         ) : (
-          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ headerShown: false }}
+          />
         )}
       </Stack.Navigator>
     </NavigationContainer>

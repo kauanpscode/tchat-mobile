@@ -1,11 +1,35 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import api from '../api/client';
 
-export const AuthContext = createContext({});
+export interface User {
+  id: number | string;
+  name: string;
+  phone: string;
+  avatar?: string;
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+interface AuthContextData {
+  authenticated: boolean;
+  user: User | null;
+  loading: boolean;
+  login: (phone: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,7 +40,7 @@ export function AuthProvider({ children }) {
 
         if (storedToken && storedUser) {
           api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-          setUser(JSON.parse(storedUser));
+          setUser(JSON.parse(storedUser) as User);
         }
       } catch (error) {
         console.error('Erro ao carregar dados locais:', error);
@@ -27,11 +51,9 @@ export function AuthProvider({ children }) {
     loadStorageData();
   }, []);
 
-  // src/contexts/AuthContext.js
-  async function login(phone, password) {
-    const response = await api.post('/login', { phone, password });
+  async function login(phone: string, password: string) {
+    const response = await api.post<LoginResponse>('/login', { phone, password });
 
-    // Verifique se a estrutura bate com o que a API realmente retorna
     const { token, user: userData } = response.data;
 
     if (!token) {
@@ -46,7 +68,6 @@ export function AuthProvider({ children }) {
     setUser(userData);
   }
 
-
   async function logout() {
     delete api.defaults.headers.common['Authorization'];
     await SecureStore.deleteItemAsync('user_token');
@@ -59,4 +80,14 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth(): AuthContextData {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth deve ser utilizado dentro de um AuthProvider');
+  }
+
+  return context;
 }

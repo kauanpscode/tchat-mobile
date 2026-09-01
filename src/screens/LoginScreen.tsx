@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,26 +14,37 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../styles/theme';
 import { formatPhoneNumber } from '../utils/formatters';
 
+// Interface para o formato de resposta de erro da API (CodeIgniter / Padrão)
+interface ApiErrorResponse {
+  messages?: {
+    error?: string;
+    [key: string]: unknown;
+  };
+  message?: string;
+  error?: string;
+}
+
 export default function LoginScreen() {
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFocusedPhone, setIsFocusedPhone] = useState(false);
-  const [isFocusedPassword, setIsFocusedPassword] = useState(false);
+  const [phone, setPhone] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isFocusedPhone, setIsFocusedPhone] = useState<boolean>(false);
+  const [isFocusedPassword, setIsFocusedPassword] = useState<boolean>(false);
 
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
 
-  function handlePhoneChange(text) {
+  function handlePhoneChange(text: string): void {
     setPhone(formatPhoneNumber(text));
   }
 
-  async function handleLogin() {
+  async function handleLogin(): Promise<void> {
     if (!phone || !password) {
       Alert.alert('Atenção', 'Informe telefone e senha.');
       return;
@@ -42,14 +53,23 @@ export default function LoginScreen() {
     try {
       setIsSubmitting(true);
       await login(phone, password);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Erro no login:', error);
-      const message =
-        error.response?.data?.messages?.error ||
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        'Erro inesperado ao realizar login.';
+
+      let message = 'Erro inesperado ao realizar login.';
+
+      // eslint-disable-next-line import/no-named-as-default-member
+      if (axios.isAxiosError(error)) {
+        const data = error.response?.data as ApiErrorResponse | undefined;
+        message =
+          data?.messages?.error ||
+          data?.message ||
+          data?.error ||
+          error.message ||
+          message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
 
       Alert.alert('Erro ao entrar', message);
     } finally {
