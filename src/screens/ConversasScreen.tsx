@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,14 +11,15 @@ import {
   Alert,
   TouchableWithoutFeedback,
   ListRenderItem,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { useAuth } from '../contexts/AuthContext';
-import { colors } from '../styles/theme';
-import { formatPhoneNumber } from '../utils/formatters';
+import { useAuth } from "../contexts/AuthContext";
+import { colors } from "../styles/theme";
+import { formatPhoneNumber } from "../utils/formatters";
+import api from "../api/client";
 
 // 1. Definição da lista de rotas e parâmetros da navegação
 export type RootStackParamList = {
@@ -29,7 +30,7 @@ export type RootStackParamList = {
   };
 };
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Conversas'>;
+type Props = NativeStackScreenProps<RootStackParamList, "Conversas">;
 
 // 2. Interface para os itens de conversa
 export interface Conversa {
@@ -43,10 +44,10 @@ export interface Conversa {
 
 const conversas: Conversa[] = [
   {
-    id: '4',
-    name: 'Equipe de Devs 🚀',
-    lastMessage: 'Lucas: A release de produção já foi subida.',
-    time: 'Ontem',
+    id: "4",
+    name: "Equipe de Devs 🚀",
+    lastMessage: "Lucas: A release de produção já foi subida.",
+    time: "Ontem",
     unreadCount: 0,
     isGroup: true,
   },
@@ -54,26 +55,33 @@ const conversas: Conversa[] = [
 
 export default function ConversasScreen({ navigation }: Props) {
   // Consumindo via Hook customizado com os tipos prontos
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
 
   // Estados tipados
   const [menuVisible, setMenuVisible] = useState<boolean>(false);
-  const [profileModalVisible, setProfileModalVisible] = useState<boolean>(false);
-  const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatar || null);
+  const [profileModalVisible, setProfileModalVisible] =
+    useState<boolean>(false);
+  const [avatarUri, setAvatarUri] = useState<string | null>(
+  user?.avatar_url || null
+);
+  const avatarSource = user?.avatar_url || avatarUri;
 
-  const primaryColor: string = colors.primary || '#00A3FF';
+  const primaryColor: string = colors.primary || "#00A3FF";
 
   // Função para abrir galeria
   async function handlePickImage(): Promise<void> {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (status !== 'granted') {
-      Alert.alert('Permissão necessária', 'Precisamos de acesso às suas fotos para trocar o avatar.');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permissão necessária",
+        "Precisamos de acesso às suas fotos para trocar o avatar.",
+      );
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -81,11 +89,30 @@ export default function ConversasScreen({ navigation }: Props) {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const selectedImageUri = result.assets[0].uri;
-      setAvatarUri(selectedImageUri);
+      try {
+        const formData = new FormData();
+        const avatarData = {
+          uri: selectedImageUri,
+          name: `avatar_${user?.id}.jpg`,
+          type: "image/jpeg",
+        };
 
-      // TODO: Disparar upload multipart/form-data para a API PHP
-      // uploadAvatarToApi(selectedImageUri);
-      Alert.alert('Sucesso', 'Foto atualizada com sucesso!');
+        formData.append("avatar", avatarData as unknown as Blob);
+        const response = await api.post("/me/avatar", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        const newAvatarUrl =
+          response.data?.avatar_url || response.data?.data?.avatar_url;
+        if (newAvatarUrl) {
+          await updateUser({ avatar_url: newAvatarUrl });
+          Alert.alert("Sucesso", "Foto de perfil atualizada com sucesso!");
+        }
+      } catch (error) {
+        console.error("Erro ao enviar imagem:", error);
+        Alert.alert("Erro", "Não foi possível atualizar a foto.");
+      }
     }
   }
 
@@ -96,7 +123,7 @@ export default function ConversasScreen({ navigation }: Props) {
         style={styles.chatItem}
         activeOpacity={0.7}
         onPress={() =>
-          navigation.navigate('Chat', {
+          navigation.navigate("Chat", {
             nome: item.name,
             conversaId: item.id,
           })
@@ -104,7 +131,7 @@ export default function ConversasScreen({ navigation }: Props) {
       >
         <View style={styles.avatarContainer}>
           <Ionicons
-            name={item.isGroup ? 'people' : 'person'}
+            name={item.isGroup ? "people" : "person"}
             size={26}
             color={colors.primary}
           />
@@ -115,7 +142,12 @@ export default function ConversasScreen({ navigation }: Props) {
             <Text style={styles.chatName} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={[styles.chatTime, item.unreadCount > 0 && styles.chatTimeActive]}>
+            <Text
+              style={[
+                styles.chatTime,
+                item.unreadCount > 0 && styles.chatTimeActive,
+              ]}
+            >
               {item.time}
             </Text>
           </View>
@@ -160,7 +192,10 @@ export default function ConversasScreen({ navigation }: Props) {
       {/* Sub-header com saudação */}
       <View style={styles.greetingBar}>
         <Text style={styles.greetingText}>
-          Conectado como <Text style={styles.greetingName}>{user?.name || 'Kauan Pontes'}</Text>
+          Conectado como{" "}
+          <Text style={styles.greetingName}>
+            {user?.name || "Kauan Pontes"}
+          </Text>
         </Text>
       </View>
 
@@ -175,9 +210,9 @@ export default function ConversasScreen({ navigation }: Props) {
 
       {/* Botão Flutuante (FAB) */}
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.accent || '#0084FF' }]}
+        style={[styles.fab, { backgroundColor: colors.accent || "#0084FF" }]}
         activeOpacity={0.85}
-        onPress={() => navigation.navigate('Chat', { nome: 'Nova Conversa' })}
+        onPress={() => navigation.navigate("Chat", { nome: "Nova Conversa" })}
       >
         <Ionicons name="chatbubble-ellipses" size={24} color="#FFFFFF" />
       </TouchableOpacity>
@@ -199,7 +234,11 @@ export default function ConversasScreen({ navigation }: Props) {
                   setProfileModalVisible(true);
                 }}
               >
-                <Ionicons name="person-outline" size={20} color={colors.textDark} />
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={colors.textDark}
+                />
                 <Text style={styles.dropdownItemText}>Meu Perfil</Text>
               </TouchableOpacity>
 
@@ -210,8 +249,17 @@ export default function ConversasScreen({ navigation }: Props) {
                   logout();
                 }}
               >
-                <Ionicons name="log-out-outline" size={20} color={colors.danger || '#F43F5E'} />
-                <Text style={[styles.dropdownItemText, { color: colors.danger || '#F43F5E' }]}>
+                <Ionicons
+                  name="log-out-outline"
+                  size={20}
+                  color={colors.danger || "#F43F5E"}
+                />
+                <Text
+                  style={[
+                    styles.dropdownItemText,
+                    { color: colors.danger || "#F43F5E" },
+                  ]}
+                >
                   Sair
                 </Text>
               </TouchableOpacity>
@@ -237,10 +285,14 @@ export default function ConversasScreen({ navigation }: Props) {
             </View>
 
             {/* Foto de Perfil */}
+
             <View style={styles.avatarSection}>
               <View style={styles.profileAvatar}>
-                {avatarUri ? (
-                  <Image source={{ uri: avatarUri }} style={styles.profileAvatarImg} />
+                {avatarSource ? (
+                  <Image
+                    source={{ uri: avatarSource }}
+                    style={styles.profileAvatarImg}
+                  />
                 ) : (
                   <Ionicons name="person" size={54} color={colors.primary} />
                 )}
@@ -255,28 +307,42 @@ export default function ConversasScreen({ navigation }: Props) {
 
             <View style={styles.infoSection}>
               <View style={styles.infoRow}>
-                <Ionicons name="person-outline" size={20} color={colors.primary} />
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={colors.primary}
+                />
                 <View style={styles.infoTextContainer}>
                   <Text style={styles.infoLabel}>Nome</Text>
-                  <Text style={styles.infoValue}>{user?.name || 'Kauan Pontes'}</Text>
-                </View>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Ionicons name="call-outline" size={20} color={colors.primary} />
-                <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>Telefone</Text>
                   <Text style={styles.infoValue}>
-                    {formatPhoneNumber(user?.phone || '41995511804')}
+                    {user?.name || "Kauan Pontes"}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.infoRow}>
-                <Ionicons name="finger-print-outline" size={20} color={colors.primary} />
+                <Ionicons
+                  name="call-outline"
+                  size={20}
+                  color={colors.primary}
+                />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Telefone</Text>
+                  <Text style={styles.infoValue}>
+                    {formatPhoneNumber(user?.phone || "41995511804")}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons
+                  name="finger-print-outline"
+                  size={20}
+                  color={colors.primary}
+                />
                 <View style={styles.infoTextContainer}>
                   <Text style={styles.infoLabel}>ID do Colaborador</Text>
-                  <Text style={styles.infoValue}>#{user?.id || '3'}</Text>
+                  <Text style={styles.infoValue}>#{user?.id || "3"}</Text>
                 </View>
               </View>
             </View>
@@ -297,30 +363,30 @@ export default function ConversasScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 14,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3,
   },
   headerTitle: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   headerIconBtn: {
     marginLeft: 16,
@@ -329,24 +395,24 @@ const styles = StyleSheet.create({
   greetingBar: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: "#E2E8F0",
   },
   greetingText: {
     fontSize: 12,
-    color: '#64748B',
+    color: "#64748B",
   },
   greetingName: {
-    fontWeight: '600',
-    color: '#1E293B',
+    fontWeight: "600",
+    color: "#1E293B",
   },
   listContent: {
     paddingBottom: 80,
   },
   chatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -354,180 +420,180 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#E0F2FE',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#E0F2FE",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 14,
   },
   chatInfo: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   chatHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   chatName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
+    fontWeight: "600",
+    color: "#1E293B",
     flex: 1,
     marginRight: 8,
   },
   chatTime: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: "#94A3B8",
   },
   chatTimeActive: {
-    color: '#00A3FF',
-    fontWeight: '600',
+    color: "#00A3FF",
+    fontWeight: "600",
   },
   chatMessageRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   lastMessage: {
     fontSize: 14,
-    color: '#64748B',
+    color: "#64748B",
     flex: 1,
     marginRight: 8,
   },
   unreadBadge: {
-    backgroundColor: '#F43F5E',
+    backgroundColor: "#F43F5E",
     borderRadius: 10,
     minWidth: 20,
     height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 5,
   },
   unreadBadgeText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   separator: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: "#F1F5F9",
     marginLeft: 82,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   dropdownOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: "rgba(0,0,0,0.1)",
   },
   dropdownMenu: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     right: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     width: 170,
     paddingVertical: 6,
     elevation: 6,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 5,
   },
   dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   dropdownItemBorder: {
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: "#F1F5F9",
   },
   dropdownItemText: {
     fontSize: 15,
-    color: '#1E293B',
+    color: "#1E293B",
     marginLeft: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   profileCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
+    width: "100%",
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 24,
     elevation: 8,
   },
   profileHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
   },
   profileTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
+    fontWeight: "700",
+    color: "#1E293B",
   },
   avatarSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   profileAvatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#E0F2FE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    backgroundColor: "#E0F2FE",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
     borderWidth: 3,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
   },
   profileAvatarImg: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   cameraBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
-    right: '35%',
+    right: "35%",
     width: 34,
     height: 34,
     borderRadius: 17,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
   },
   infoSection: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 8,
   },
   infoTextContainer: {
@@ -536,23 +602,23 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '500',
+    color: "#94A3B8",
+    fontWeight: "500",
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1E293B',
+    fontWeight: "600",
+    color: "#1E293B",
     marginTop: 2,
   },
   closeBtn: {
     borderRadius: 12,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   closeBtnText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

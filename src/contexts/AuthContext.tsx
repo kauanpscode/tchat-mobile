@@ -6,7 +6,7 @@ export interface User {
   id: number | string;
   name: string;
   phone: string;
-  avatar?: string;
+  avatar_url?: string;
 }
 
 interface LoginResponse {
@@ -20,6 +20,7 @@ interface AuthContextData {
   loading: boolean;
   login: (phone: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (updatedUserData : Partial <User>) => Promise<void>;
 }
 
 interface AuthProviderProps {
@@ -75,8 +76,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
   }
 
+  async function updateUser ( updatedUserData : Partial <User>) {
+    if (!user) return;
+    
+    const updatedUser = {...user,  ...updatedUserData};
+
+    setUser(updatedUser);
+
+    await SecureStore.setItemAsync('user_data', JSON.stringify(updatedUser));
+  }
+
   return (
-    <AuthContext.Provider value={{ authenticated: !!user, user, login, logout, loading }}>
+    <AuthContext.Provider value={{ authenticated: !!user, user, login, logout, loading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
