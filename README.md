@@ -190,8 +190,8 @@ A base de dados de demonstração possui colaboradores vinculados a empresas dis
 **Kauan Pontes**  
 Desenvolvedor de Software focado em soluções Fullstack e Mobile de alta performance.
 
-* **GitHub**: [@kauanps](https://github.com/kauanps)
-* **LinkedIn**: [Kauan Pontes](https://linkedin.com/in/kauanps)
+* **GitHub**: [@kauanps](https://github.com/kauanpscode)
+* **LinkedIn**: [Kauan Pontes](https://www.linkedin.com/in/kauan-pontes-144221278)
 
 ---
 *Este projeto integra meu portfólio profissional de engenharia de software e desenvolvimento de aplicações móveis.*
