@@ -1,4 +1,4 @@
-# 📱 Tchat Mobile — WhatsApp Corporativo & Plataforma Multiempresa
+# 📱 Nexus — WhatsApp Corporativo & Plataforma Multiempresa
 
 [![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020?logo=expo&logoColor=white)](https://expo.dev/)
@@ -7,7 +7,7 @@
 [![Multi-tenant](https://img.shields.io/badge/Architecture-Multi--tenant%20SaaS-0A4D68)](#-arquitetura-e-decisões-de-engenharia)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-O **Tchat Mobile** é uma solução de comunicação corporativa móvel inspirada na experiência de usuário do WhatsApp, desenvolvida para operar como um **SaaS B2B Multiempresa (White-label)**.
+O **Nexus** é uma solução de comunicação corporativa móvel inspirada na experiência de usuário do WhatsApp, desenvolvida para operar como um **SaaS B2B Multiempresa (White-label)**.
 
 O projeto resolve uma das maiores dores de conformidade e segurança das empresas modernas: **o uso de mensageiros pessoais para assuntos de trabalho**. Ao centralizar a comunicação em um ambiente privativo, o Tchat garante isolamento de dados entre organizações, controle de acesso em tempo real, governança de colaboradores e personalização visual dinâmica da marca.
 
@@ -15,7 +15,7 @@ O projeto resolve uma das maiores dores de conformidade e segurança das empresa
 
 ## 💼 Caso de Negócio & Proposta de Valor
 
-| Problema com Mensageiros Convencionais | Solução Entregue pelo Tchat Mobile |
+| Problema com Mensageiros Convencionais | Solução Entregue pelo Nexus |
 | :--- | :--- |
 | **Vazamento de dados corporativos**: Colaboradores misturam conversas de trabalho e pessoais em contas particulares. | **Ambiente 100% corporativo**: Apenas membros ativos da mesma empresa conseguem conversar entre si. |
 | **Dificuldade de desligamento**: Funcionários demitidos continuam nos grupos de WhatsApp com histórico preservado. | **Revogação de acesso instantânea**: Desligar um membro no backend encerra sua sessão móvel imediatamente. |
